@@ -12,25 +12,6 @@ const getVal = (feat) => {
   return feat.properties.POP_EST / 7800000000;
 };
 
-//setup data
-// world.polygonsData(countriesWithCovid);
-//document.querySelector('.title-desc').innerHTML =
-//  'Hover on a country or territory to see risk metrics';
-
-//dates = Object.keys(countries.China);
-
-// Set slider values
-//slider.max = dates.length - 1;
-//slider.value = dates.length - 1;
-
-//slider.disabled = false;
-//playButton.disabled = false;
-
-//updateCounters();
-//updatePolygonsData();
-
-//updatePointOfView();
-
 const World = ({ countryFeatureData, countryMetricData }) => {
   const globeEl = useRef();
   const [hoverD, setHoverD] = useState();
@@ -38,7 +19,6 @@ const World = ({ countryFeatureData, countryMetricData }) => {
 
 
   useEffect(() => {
-    // setup
     setTimeout(() => {
       setTransitionDuration(4000);
     });
