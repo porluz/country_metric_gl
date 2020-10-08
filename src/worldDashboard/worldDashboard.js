@@ -10,6 +10,7 @@ const WorldDashboard = () => {
 
     const [countryFeatureData, setCountryFeatureData] = useState({ features: [] });
     const [countryMetricData, setCountryMetricData] = useState([]);
+    const [dataLoading, setDataLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -17,14 +18,25 @@ const WorldDashboard = () => {
           const countryMetricData = await request(COUNTRY_METRIC_DATA);
           setCountryFeatureData(countryData);
           setCountryMetricData(countryMetricData);
+          setDataLoading(false);
         };
       
         fetchData();
       }, []);
 
-    return <World 
-        countryFeatureData={countryFeatureData}
-        countryMetricData={countryMetricData} /> 
+    return (
+      <>
+        <div class="top-info-container">
+          <div class="title">Country Metrics</div>
+          <div class="title-desc">
+            { dataLoading ? 'Loading country metric data...' : 'Hover on a country or territory to see risk metrics'}
+          </div>
+        </div>
+        <World 
+          countryFeatureData={countryFeatureData}
+          countryMetricData={countryMetricData} />
+      </>
+    ); 
 
 
 }
