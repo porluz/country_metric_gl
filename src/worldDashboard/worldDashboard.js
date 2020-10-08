@@ -26,9 +26,9 @@ const WorldDashboard = () => {
 
     return (
       <>
-        <div class="top-info-container">
-          <div class="title">Country Metrics</div>
-          <div class="title-desc">
+        <div className="top-info-container">
+          <div className="title">Country Metrics</div>
+          <div className="title-desc">
             { dataLoading ? 'Loading country metric data...' : 'Hover on a country or territory to see risk metrics'}
           </div>
         </div>

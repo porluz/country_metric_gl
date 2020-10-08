@@ -55,7 +55,7 @@ const World = ({ countryFeatureData, countryMetricData }) => {
   
   return <Globe
     ref={globeEl}
-    globeImageUrl="https://unpkg.com/three-globe/example/img/earth-dark.jpg"
+    globeImageUrl="https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg"
     polygonsData={countryFeatureData.features}
     polygonAltitude={d => d === hoverD ? 0.12 : 0.06}
     polygonCapColor={d => d === hoverD ? 'steelblue' : colorScale(getVal(d))}
