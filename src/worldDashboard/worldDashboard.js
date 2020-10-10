@@ -21,7 +21,7 @@ const WorldDashboard = () => {
   const [dates, setDates] = useState([]);
   const [sliderVal, setSliderVal] = useState(0);
   const [sliderMax, setSliderMax] = useState(0);
-  const [sliderDisabled, setSliderDisabled] = useState('');
+  const [sliderDisabled, setSliderDisabled] = useState('disabled');
   const [pointOfView, setPointofView] = useState();
 
   useEffect(() => {
@@ -39,7 +39,7 @@ const WorldDashboard = () => {
       // update slider
       setSliderMax(dates.length - 1);
       setSliderVal(dates.length - 1);
-      setSliderDisabled('disabled');
+      setSliderDisabled('');
     };
 
     const updatePointOfView = async () => {
@@ -108,11 +108,15 @@ const WorldDashboard = () => {
         disabled={sliderDisabled}
         type="range"
         min="0"
+        value={sliderVal}
         max={sliderMax}
         step="1"
-        onChange={() => setCurrentDate(sliderVal)}
+        onChange={(event) => {
+          setSliderVal(event.target.value);
+          setCurrentDate(event.target.value);
+        }}
       />
-      {/* <p>as of {formatDate(dates[sliderVal])}</p> */}
+      {<p>as of {formatDate(dates[sliderVal])}</p>}
     </>
   );
 
