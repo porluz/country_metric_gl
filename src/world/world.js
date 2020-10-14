@@ -1,49 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Globe from 'react-globe.gl';
 import * as d3 from 'd3';
 import './world.css';
 
 const flagEndpoint = 'https://corona.lmao.ninja/assets/img/flags';
-let flagName;
-const colorScale = d3.scaleSequentialPow(d3.interpolateYlOrRd).exponent(1 / 4);
 
-const getVal = (feat) => {
-  return feat.properties.POP_EST / 7800000000;
-};
-
-const getLabel = () => {
-
-}
-const World = ({ countryFeatureData, countryMetricData, dates, currentDate,
-  selectedMetric, onUpdateCountryFeatureData, pointOfView }) => {
+const World = (props) => {
   const globeEl = useRef();
   const [hoverD, setHoverD] = useState();
   const [transitionDuration, setTransitionDuration] = useState(1000);
+  const countryFeatureData = props.countryFeatureData;
+  //const pointOfView = props.pointOfView;
+  const getColorScale = props.getColorScale;
+  const selectedMetricName = props.selectedMetricName;
+  const globalImageUrl = props.globalImageUrl;
+  const backgroundColor= props.backgroundColor;
 
   useEffect(() => {
-    setTimeout(() => {
-      setTransitionDuration(4000);
-    });
-  }, [countryFeatureData.length]);
+    // load data
+      globeEl.current.pointOfView({lat: 39.6, lng: -98.5, altitude: 1.5}, 4000);
+  }, []);
 
-
-  // useEffect(() => {
-  //   // Auto-rotate
-  //   globeEl.current.controls().autoRotate = true;
-  //   globeEl.current.controls().autoRotateSpeed = 0.3;
-  //   globeEl.current.pointOfView({ altitude: 4 }, 5000);
-  // }, []);
-  
+  useEffect(() => {
+    // load data
+      globeEl.current.pointOfView(props.pointOfView);
+  }, [props.pointOfView]);
 
   return <Globe
     ref={globeEl}
-    globeImageUrl="https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg"
-    //pointOfView={pointOfView}
-    polygonsData={countryFeatureData.features}
+    height={600}
+    globeImageUrl={globalImageUrl}
+    backgroundColor={backgroundColor}
+    polygonsData={countryFeatureData}
     polygonAltitude={d => d === hoverD ? 0.12 : 0.06}
-    polygonCapColor={d => d === hoverD ? 'steelblue' : colorScale(getVal(d))}
+    polygonCapColor={d => d === hoverD ? 'steelblue' : getColorScale(d)}
     polygonSideColor={() => 'rgba(0, 100, 0, 0.15)'}
-    polygonLabel={({ properties: d, metricData: metricData }) => {
+    polygonLabel={({ properties: d, metricData }) => {
+      let flagName;
       if (d.ADMIN === 'France') {
         flagName = 'fr';
       } else if (d.ADMIN === 'Norway') {
@@ -51,20 +44,29 @@ const World = ({ countryFeatureData, countryMetricData, dates, currentDate,
       } else {
         flagName = d.ISO_A2.toLowerCase();
       }
-      
-      let metric = metricData.find( m => m.metricName === selectedMetric);
-      const metricVal = metric.metricValue;
-      return `
-        <div class="card">
-          <img class="card-img" src="${flagEndpoint}/${flagName}.png" alt="flag" />
-          <div class="container">
-             <span class="card-title"><b>${d.NAME}</b></span> <br />
-             <div class="card-spacer"></div>
-             <hr />
-             <div class="card-spacer"></div>
-             <span>Population: ${d3.format('.3s')(d.POP_EST)}</span>
-             <span>${selectedMetric}: ${metricVal}</span>
-        `;
+      let metricHTML = ''
+      for(let i = 0; i < metricData.length; i++) {
+        const metricName = metricData[i].metricName;
+        const metricVal = metricData[i].metricValue;
+        if(metricName === selectedMetricName) {
+          metricHTML = `<span class="card-selected-metric">${metricName}: ${metricVal}</span><br>` + metricHTML
+        } else {
+          metricHTML += `<span >${metricName}: ${metricVal}</span><br>`
+        }
+      }
+      if(metricData) {
+        return `
+          <div class="card">
+            <img class="card-img" src="${flagEndpoint}/${flagName}.png" alt="flag" />
+            <div class="container">
+              <span class="card-title"><b>${d.NAME}</b></span> <br />
+              <div class="card-spacer"></div>
+              <hr />
+              <div class="card-spacer"></div>
+              <span>Population: ${d3.format('.3s')(d.POP_EST)}</span><br>
+
+          ` + metricHTML;
+      }
     }}
     onPolygonHover={setHoverD}
     polygonsTransitionDuration={transitionDuration}

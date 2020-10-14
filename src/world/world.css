@@ -1,19 +1,21 @@
 * {
-    margin: 0;
-    padding: 0;
-  }
-  
-  body {
-    font-family: 'Space Mono', monospace;
-    overflow: hidden;
-    background: black;
-  }
-  
+  margin: 0;
+  padding: 0;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+canvas:focus,
+button:focus {
+    outline: none;
+}
+
   .top-info-container {
     z-index: 1;
-    top: 20px;
+    top: 30px;
     position: absolute;
-    color: white;
+    color: black;
     text-align: center;
     width: 100%;
   }
@@ -22,36 +24,26 @@
     z-index: 1;
     bottom: 20px;
     position: absolute;
-    color: white;
+    color: black;
     text-align: center;
     width: 100%;
   }
   
   .title {
-    font-size: 35px;
-    color: #e6f1ff;
+    font-size: 70px;
+    font-family: 'cnx-medium';
+    color: black;
+    padding: 10px;
   }
   
   .title-desc {
-    margin-top: 5px;
-    color: #ccd6f6;
-    padding: 0 5px;
-  }
-  
-  #infected {
-    color: goldenrod;
-  }
-  
-  #deaths {
-    color: #ff4848;
-  }
-  
-  #recovered {
-    color: #1ae021;
+    color: rgb(73, 73, 73);
+    /* padding: 0 5px; */
+    padding: 10px;
   }
   
   .card {
-    font-family: 'Space Mono', monospace;
+    font-family: 'cnx-light', monospace;
     transition: 0.3s;
     background-color: black;
     width: 190px;
@@ -83,11 +75,17 @@
   .card-spacer {
     height: 5px;
   }
+
+  .card-selected-metric {
+    font-family: 'cnx-regular';
+    color: lightcoral;
+  }
   
   .bottom-info {
     display: flex;
     flex-direction: column;
     font-size: 11px;
+    padding: 10px;
   }
   
   .scene-tooltip {
@@ -114,6 +112,7 @@
     height: 2px;
     width: 100%;
     margin-right: 10px;
+    margin-top: 10px;
     border-radius: 5px;
     background: #ccd6f6;
     outline: none;

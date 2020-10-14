@@ -1,3 +1,30 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+@font-face {
+  font-family: 'cnx-light';
+  src: local('cnx-light'), url(./fonts/cnx-light.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'cnx-medium';
+  src: local('cnx-medium'), url(./fonts/cnx-medium.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'cnx-regular';
+  src: local('cnx-regular'), url(./fonts/cnx-regular.woff2) format('woff2');
+}
+
+
+body {
+  font-family: 'cnx-light', monospace;
+  overflow: hidden;
+  background: white;
+  color: black;
+}
 .App {
   text-align: center;
 }
@@ -14,14 +41,14 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: white;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
-  color: white;
+  color: black;
 }
 
 .App-link {
