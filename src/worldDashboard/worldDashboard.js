@@ -1,28 +1,17 @@
-import { request, getCoordinates, formatDate } from '../utils';
-import React, { useState, useCallback, useEffect } from 'react';
+import { request, formatDate } from '../utils';
+import React, { useState, useEffect, useCallback } from 'react';
 import './worldDashboard.css';
 import * as d3 from 'd3';
 import World from '../world/world';
 
+import useWindowSize from '../useWindowSize';
+
 const COUNTRY_FEATURE_DATA = 'http://localhost:3000/datasets/ne_110m_admin_0_countries.geojson';
 const COUNTRY_METRIC_DATA = 'http://localhost:3000/datasets/metricData.json';
 const GLOBAL_IMAGE_URL = 'https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-day.jpg';
-
-const getVal = (feature, selectedMetric) => {
-  if(!feature.metricData) {
-    return 0.0;
-  }
-  let metric = feature.metricData.find( m => m.metricName === selectedMetric.name);
-  return metric.metricValue / selectedMetric.max;
-};
-
-const getMetricItems = (metrics) => 
-  metrics.map(m => 
-  <option key={m.name} value={m.name}>{m.name}</option>
-  );
-
-let colorScale = d3.scaleSequentialPow(d3.interpolateYlOrRd);
-const metrics = [
+const FLAG_ENDPOINT = 'https://corona.lmao.ninja/assets/img/flags';
+const STARTING_POV_USA = { lat: 39.6, lng: -98.5, altitude: 2.6 };
+const METRICS = [
   {
     name: 'tre',
     max: 1.0,
@@ -37,8 +26,60 @@ const metrics = [
   }
 ];
 
-const WorldDashboard = () => {
+// determine color based on value from 0-1
+const colorScale = d3.scaleSequentialPow(d3.interpolateYlOrRd);
 
+// get value from 0-1 for the color scale
+const getVal = (feature, selectedMetric) => {
+  if (!feature.metricData) {
+    return 0.0;
+  }
+  let metric = feature.metricData.find(m => m.metricName === selectedMetric.name);
+  return metric.metricValue / selectedMetric.max;
+};
+
+// metric select items
+const getMetricItems = () =>
+  METRICS.map(m =>
+    <option key={m.name} value={m.name}>{m.name}</option>
+  );
+
+// sum for totals
+const sumMetricValue = (metricData, date, metricIndex) => {
+  const countries = Object.keys(metricData);
+  return countries
+    .reduce((acc, curr) => {
+      return acc + parseFloat(metricData[curr][date][metricIndex].metricValue);
+    }, 0);
+}
+// mutator to update metric data based on date, within the country feature data
+const updateFeatureData = (countryFeatureData, countryMetricData, currentDate) => {
+  for (let x = 0; x < countryFeatureData.length; x++) {
+    const country = countryFeatureData[x].properties.NAME;
+    if (countryMetricData[country]) {
+      countryFeatureData[x].metricData =
+        countryMetricData[country][currentDate];
+    } else {
+      countryFeatureData[x].metricData = [
+        {
+          metricName: 'tre',
+          metricValue: 0
+        },
+        {
+          metricName: 'risk_rating',
+          metricValue: 0
+        },
+        {
+          metricName: 'utilized',
+          metricValue: 0
+        }
+      ]
+    }
+  }
+  return countryFeatureData;
+}
+
+const WorldDashboard = () => {
   const [countryFeatureData, setCountryFeatureData] = useState([]);
   const [countryMetricData, setCountryMetricData] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -47,155 +88,236 @@ const WorldDashboard = () => {
   const [sliderVal, setSliderVal] = useState(0);
   const [sliderMax, setSliderMax] = useState(0);
   const [sliderDisabled, setSliderDisabled] = useState('disabled');
-  const [pointOfView, setPointofView] = useState();
-  const [selectedMetric, setSelectedMetric] = useState(metrics[0]);
+  const [selectedMetric, setSelectedMetric] = useState(METRICS[0]);
   const [selectedMetricName, setSelectedMetricName] = useState('tre');
   const [totalUtilized, setTotalUtilized] = useState(0.0);
+  const [playBtnText, setPlayBtnTxt] = useState('Play');
+  const [intervalId, setIntervalId] = useState();
 
-  const getColorScale  = (feature) => {
+  // need responsive width and height of the screen
+  const size = useWindowSize();
+
+  const getColorScale = (feature) => {
     return colorScale(getVal(feature, selectedMetric));
   };
 
   useEffect(() => {
 
     const fetchData = async () => {
+      // get feature/country metric data
       const countryData = await request(COUNTRY_FEATURE_DATA);
+      /* missing metric data for: 
+      bahamas
+      czechia
+      dominican republic
+      belize
+      bosnia and her
+      macedonia
+      turkmenistan
+      tajikistan
+      yemen
+      somaliland
+      myanmar
+      s. sudan
+      dem rep congo
+      w. sahara
+      mali
+      guinea bissau
+      sierra leone
+      central african rep
+      eq guinea
+      cote d’ovaire
+      botswana
+      malawi
+      swaziland
+      fr s. antarctic lands
+      lesotho
+      north korea
+      solomon islands
+      vanuatu */
       const metricData = await request(COUNTRY_METRIC_DATA);
- 
       // extract dates
       const dates = Object.keys(metricData.China);
-      const countries = Object.keys(metricData);
-
-
-      const total = countries
-      .reduce((acc, curr) => {
-          return acc + parseFloat(metricData[curr][dates[dates.length - 1]][2].metricValue);
-      }, 0);
-      
-      setTotalUtilized(total.toFixed(2));
- 
-      // update slider
+      // extract totals
+      const total = sumMetricValue(metricData, dates[dates.length - 1], 2);
+      // set slider
       setSliderMax(dates.length - 1);
       setSliderVal(dates.length - 1);
       setSliderDisabled('');
+      //set data
       setCountryMetricData(metricData);
       setCountryFeatureData(countryData.features);
       setDates(Object.keys(metricData.China));
       setCurrentDate(dates[dates.length - 1]);
       setDataLoading(false);
+      setTotalUtilized(total.toFixed(2));
     };
 
-    const updatePointOfView = async () => {
-      // Get coordinates
-      try {
-        const { latitude, longitude } = await getCoordinates();
-
-        setPointofView(
-          {
-            lat: latitude,
-            lng: longitude,
-          },
-          -1002.5
-        );
-      } catch (e) {
-        console.log('Unable to set point of view.');
-      }
-    }
-
     fetchData();
-    updatePointOfView();
   }, []);
 
-  
-  useEffect(() => {
-    if(currentDate !== undefined) {
-      for (let x = 0; x < countryFeatureData.length; x++) {
-        const country = countryFeatureData[x].properties.NAME;
-        if (countryMetricData[country]) {
-          countryFeatureData[x].metricData = 
-            countryMetricData[country][currentDate];
-        } else {
-          countryFeatureData[x].metricData = [
-            {
-              metricName: 'tre',
-              metricValue: 0
-            },
-            {
-              metricName: 'risk_rating',
-              metricValue: 0
-            },
-            {
-              metricName: 'utilized',
-              metricValue: 0
-            }
-          ]
-        }
-      }
- 
-      const countries = Object.keys(countryMetricData);
-      const total = countries
-      .reduce((acc, curr) => {
-          return acc + parseFloat(countryMetricData[curr][currentDate][2].metricValue);
-      }, 0);
-      
-      setTotalUtilized(total.toFixed(2));
 
-      setCountryFeatureData(countryFeatureData);
+  const polygonLabel = useCallback(({ properties: d, metricData }) => {
+    let flagName;
+    if (d.ADMIN === 'France') {
+      flagName = 'fr';
+    } else if (d.ADMIN === 'Norway') {
+      flagName = 'no';
+    } else {
+      flagName = d.ISO_A2.toLowerCase();
     }
-  }, [selectedMetricName, dates, currentDate, countryMetricData]);
+    let metricHTML = ''
+    for(let i = 0; i < metricData.length; i++) {
+      const metricName = metricData[i].metricName;
+      const metricVal = metricData[i].metricValue;
+      if(metricName === selectedMetricName) {
+        metricHTML = `<span class='card-selected-metric'>${metricName}: ${metricVal}</span><br>` + metricHTML
+      } else {
+        metricHTML += `<span >${metricName}: ${metricVal}</span><br>`
+      }
+    }
+    if(metricData) {
+      return `
+        <div class='card'>
+          <img class='card-img' src='${FLAG_ENDPOINT}/${flagName}.png' alt='flag' />
+          <div class='container'>
+            <span class='card-title'><b>${d.NAME}</b></span> <br />
+            <div class='card-spacer'></div>
+            <hr />
+            <div class='card-spacer'></div>
+            <span>Population: ${d3.format('.3s')(d.POP_EST)}</span><br>
+  
+        ` + metricHTML;
+    }
+  }, [selectedMetricName]);
 
   useEffect(() => {
-    let metricObj = metrics.find( m => m.name === selectedMetricName);
-    setSelectedMetric(metricObj);
-  }, [selectedMetricName, metrics]);
+    if (currentDate) {
+      // get updated feature data
+      const data = updateFeatureData(countryFeatureData, countryMetricData, currentDate);
+      // get totals
+      const total = sumMetricValue(countryMetricData, currentDate, 2);
+      // set data
+      setTotalUtilized(total.toFixed(2));
+      setCountryFeatureData(c => data);
+    }
+  }, [selectedMetricName, dates, currentDate, countryMetricData, countryFeatureData]);
 
+  useEffect(() => {
+    // update selected metric when current metric name is updated
+    let metricObj = METRICS.find(m => m.name === selectedMetricName);
+    setSelectedMetric(metricObj);
+  }, [selectedMetricName]);
+
+  useEffect(() => {
+    // update current date when slider value index is updated
+    setCurrentDate(dates[sliderVal]);
+  }, [sliderVal, dates]);
+
+  // Move the slider incrementally by an interval
+  // and play each date like a frame
+  function play(event) {
+    const playButton = event.target;
+    if (playButton.innerText === 'Play') {
+      setPlayBtnTxt('Pause');
+    } else {
+      setPlayBtnTxt('Play');
+      clearInterval(intervalId);
+      return;
+    }
+
+    let sv = sliderVal;
+    if (+sv === dates.length - 1) {
+      setSliderVal(0);
+      sv = 0;
+    }
+    const id = setInterval(() => {
+      sv++;
+      setSliderVal(sv);
+      if (+sv === dates.length - 1) {
+        setPlayBtnTxt('Play');
+        clearInterval(intervalId);
+      }
+    }, 200);
+
+    setIntervalId(id);
+  }
 
   return (
     <>
-      <div className="top-info-container">
-        <div className="title">Country Metrics</div>
-        <div className="title-desc">
+      <div className='top-info-container'>
+        <div className='title'>Country Metrics</div>
+        <div className='title-desc'>
           {dataLoading ? 'Loading country metric data...' : 'Hover on a country or territory to see risk metrics'}
         </div>
       </div>
-       <World
+      <div className='metrics'>
+        <span className='metrics-title'><p>Selected Metric</p></span>
+        <select
+          name='name'
+          className='metric-select'
+          value={selectedMetricName}
+          onChange={(event) => {
+            setSelectedMetricName(event.target.value);
+          }}>
+          {getMetricItems()}
+        </select>
+      </div>
+      <World
+        width={size.width}
+        height={size.height}
         globalImageUrl={GLOBAL_IMAGE_URL}
         getColorScale={getColorScale}
         backgroundColor={'#fff'}
         countryFeatureData={countryFeatureData}
-        pointOfView={pointOfView}
-        selectedMetricName={selectedMetricName}
+        startingPointOfView={STARTING_POV_USA}
+        selectedMetric={selectedMetric}
+        polygonLabel={polygonLabel}
       />
-      <input
-        className="slider"
-        disabled={sliderDisabled}
-        type="range"
-        min="0"
-        value={sliderVal}
-        max={sliderMax}
-        step="1"
-        onChange={(event) => {
-          setSliderVal(event.target.value);
-          setCurrentDate(dates[event.target.value]);
-        }}
-      />
-      <select
-        name='name'
-        className="metric-select"
-        value={selectedMetricName}
-        onChange={(event) => {
-          let metricName = event.target.value;
-          setSelectedMetricName(metricName);
-        }}>
-        {getMetricItems(metrics)}
-      </select>
-      {<p className="metric-date">as of {formatDate(dates[sliderVal])}</p>}
-
-      {<p className="metric-totals">Total Utilized: {totalUtilized}</p>}
+      <div className='bottom-info-container'>
+        <div style={{ display: 'flex', justifyContent: 'center' }} >
+          <div className='timeline-container'>
+            <button className='play-button' onClick={play}>{playBtnText}</button>
+            <input
+              className='slider'
+              disabled={sliderDisabled}
+              type='range'
+              min='0'
+              value={sliderVal}
+              max={sliderMax}
+              step='1'
+              onChange={(event) => {
+                setSliderVal(event.target.value);
+              }}
+            />
+            <span className='slider-date'>
+              <p
+              >
+                {dates[sliderVal]}
+              </p>
+            </span>
+          </div>
+        </div>
+        <div className='metric-totals'>
+          Total Metrics <span className='updated'>as of {formatDate(dates[sliderVal])}</span>
+        </div>
+        <table className='metric-total-table'>
+          <thead>
+            <tr>
+              <th className='table-header' >
+                Utilized
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+              <tr>
+              <td><span className='table-cell'>{totalUtilized}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </>
   );
-
-
 }
 
 export default WorldDashboard;
