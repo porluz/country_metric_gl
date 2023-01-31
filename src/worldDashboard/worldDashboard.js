@@ -1,29 +1,31 @@
-import { request, formatDate } from '../utils';
-import React, { useState, useEffect, useCallback } from 'react';
-import './worldDashboard.css';
-import * as d3 from 'd3';
-import World from '../world/world';
+import { request, formatDate } from "../utils";
+import React, { useState, useEffect, useCallback } from "react";
+import "./worldDashboard.css";
+import * as d3 from "d3";
+import World from "../world/world";
 
-import useWindowSize from '../useWindowSize';
+import useWindowSize from "../useWindowSize";
 
-const COUNTRY_FEATURE_DATA = 'http://localhost:3000/datasets/ne_110m_admin_0_countries.geojson';
-const COUNTRY_METRIC_DATA = 'http://localhost:3000/datasets/metricData.json';
-const GLOBAL_IMAGE_URL = 'https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-day.jpg';
-const FLAG_ENDPOINT = 'https://corona.lmao.ninja/assets/img/flags';
+const COUNTRY_FEATURE_DATA =
+  "http://localhost:3000/datasets/ne_110m_admin_0_countries.geojson";
+const COUNTRY_METRIC_DATA = "http://localhost:3000/datasets/metricData.json";
+const GLOBAL_IMAGE_URL =
+  "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-day.jpg";
+const FLAG_ENDPOINT = "https://flagcdn.com/120x90";
 const STARTING_POV_USA = { lat: 39.6, lng: -98.5, altitude: 2.6 };
 const METRICS = [
   {
-    name: 'tre',
+    name: "tre",
     max: 1.0,
   },
   {
-    name: 'risk_rating',
+    name: "risk_rating",
     max: 5,
   },
   {
-    name: 'utilized',
+    name: "utilized",
     max: 50000000,
-  }
+  },
 ];
 
 // determine color based on value from 0-1
@@ -34,26 +36,33 @@ const getVal = (feature, selectedMetric) => {
   if (!feature.metricData) {
     return 0.0;
   }
-  let metric = feature.metricData.find(m => m.metricName === selectedMetric.name);
+  let metric = feature.metricData.find(
+    (m) => m.metricName === selectedMetric.name
+  );
   return metric.metricValue / selectedMetric.max;
 };
 
 // metric select items
 const getMetricItems = () =>
-  METRICS.map(m =>
-    <option key={m.name} value={m.name}>{m.name}</option>
-  );
+  METRICS.map((m) => (
+    <option key={m.name} value={m.name}>
+      {m.name}
+    </option>
+  ));
 
 // sum for totals
 const sumMetricValue = (metricData, date, metricIndex) => {
   const countries = Object.keys(metricData);
-  return countries
-    .reduce((acc, curr) => {
-      return acc + parseFloat(metricData[curr][date][metricIndex].metricValue);
-    }, 0);
-}
+  return countries.reduce((acc, curr) => {
+    return acc + parseFloat(metricData[curr][date][metricIndex].metricValue);
+  }, 0);
+};
 // mutator to update metric data based on date, within the country feature data
-const updateFeatureData = (countryFeatureData, countryMetricData, currentDate) => {
+const updateFeatureData = (
+  countryFeatureData,
+  countryMetricData,
+  currentDate
+) => {
   for (let x = 0; x < countryFeatureData.length; x++) {
     const country = countryFeatureData[x].properties.NAME;
     if (countryMetricData[country]) {
@@ -62,22 +71,22 @@ const updateFeatureData = (countryFeatureData, countryMetricData, currentDate) =
     } else {
       countryFeatureData[x].metricData = [
         {
-          metricName: 'tre',
-          metricValue: 0
+          metricName: "tre",
+          metricValue: 0,
         },
         {
-          metricName: 'risk_rating',
-          metricValue: 0
+          metricName: "risk_rating",
+          metricValue: 0,
         },
         {
-          metricName: 'utilized',
-          metricValue: 0
-        }
-      ]
+          metricName: "utilized",
+          metricValue: 0,
+        },
+      ];
     }
   }
   return countryFeatureData;
-}
+};
 
 const WorldDashboard = () => {
   const [countryFeatureData, setCountryFeatureData] = useState([]);
@@ -87,11 +96,11 @@ const WorldDashboard = () => {
   const [dates, setDates] = useState([]);
   const [sliderVal, setSliderVal] = useState(0);
   const [sliderMax, setSliderMax] = useState(0);
-  const [sliderDisabled, setSliderDisabled] = useState('disabled');
+  const [sliderDisabled, setSliderDisabled] = useState("disabled");
   const [selectedMetric, setSelectedMetric] = useState(METRICS[0]);
-  const [selectedMetricName, setSelectedMetricName] = useState('tre');
+  const [selectedMetricName, setSelectedMetricName] = useState("tre");
   const [totalUtilized, setTotalUtilized] = useState(0.0);
-  const [playBtnText, setPlayBtnTxt] = useState('Play');
+  const [playBtnText, setPlayBtnTxt] = useState("Play");
   const [intervalId, setIntervalId] = useState();
 
   // need responsive width and height of the screen
@@ -102,7 +111,6 @@ const WorldDashboard = () => {
   };
 
   useEffect(() => {
-
     const fetchData = async () => {
       // get feature/country metric data
       const countryData = await request(COUNTRY_FEATURE_DATA);
@@ -143,7 +151,7 @@ const WorldDashboard = () => {
       // set slider
       setSliderMax(dates.length - 1);
       setSliderVal(dates.length - 1);
-      setSliderDisabled('');
+      setSliderDisabled("");
       //set data
       setCountryMetricData(metricData);
       setCountryFeatureData(countryData.features);
@@ -156,28 +164,31 @@ const WorldDashboard = () => {
     fetchData();
   }, []);
 
-
-  const polygonLabel = useCallback(({ properties: d, metricData }) => {
-    let flagName;
-    if (d.ADMIN === 'France') {
-      flagName = 'fr';
-    } else if (d.ADMIN === 'Norway') {
-      flagName = 'no';
-    } else {
-      flagName = d.ISO_A2.toLowerCase();
-    }
-    let metricHTML = ''
-    for(let i = 0; i < metricData.length; i++) {
-      const metricName = metricData[i].metricName;
-      const metricVal = metricData[i].metricValue;
-      if(metricName === selectedMetricName) {
-        metricHTML = `<span class='card-selected-metric'>${metricName}: ${metricVal}</span><br>` + metricHTML
+  const polygonLabel = useCallback(
+    ({ properties: d, metricData }) => {
+      let flagName;
+      if (d.ADMIN === "France") {
+        flagName = "fr";
+      } else if (d.ADMIN === "Norway") {
+        flagName = "no";
       } else {
-        metricHTML += `<span >${metricName}: ${metricVal}</span><br>`
+        flagName = d.ISO_A2.toLowerCase();
       }
-    }
-    if(metricData) {
-      return `
+      let metricHTML = "";
+      for (let i = 0; i < metricData.length; i++) {
+        const metricName = metricData[i].metricName;
+        const metricVal = metricData[i].metricValue;
+        if (metricName === selectedMetricName) {
+          metricHTML =
+            `<span class='card-selected-metric'>${metricName}: ${metricVal}</span><br>` +
+            metricHTML;
+        } else {
+          metricHTML += `<span >${metricName}: ${metricVal}</span><br>`;
+        }
+      }
+      if (metricData) {
+        return (
+          `
         <div class='card'>
           <img class='card-img' src='${FLAG_ENDPOINT}/${flagName}.png' alt='flag' />
           <div class='container'>
@@ -185,27 +196,40 @@ const WorldDashboard = () => {
             <div class='card-spacer'></div>
             <hr />
             <div class='card-spacer'></div>
-            <span>Population: ${d3.format('.3s')(d.POP_EST)}</span><br>
+            <span>Population: ${d3.format(".3s")(d.POP_EST)}</span><br>
   
-        ` + metricHTML;
-    }
-  }, [selectedMetricName]);
+        ` + metricHTML
+        );
+      }
+    },
+    [selectedMetricName]
+  );
 
   useEffect(() => {
     if (currentDate) {
       // get updated feature data
-      const data = updateFeatureData(countryFeatureData, countryMetricData, currentDate);
+      const data = updateFeatureData(
+        countryFeatureData,
+        countryMetricData,
+        currentDate
+      );
       // get totals
       const total = sumMetricValue(countryMetricData, currentDate, 2);
       // set data
       setTotalUtilized(total.toFixed(2));
-      setCountryFeatureData(c => data);
+      setCountryFeatureData((c) => data);
     }
-  }, [selectedMetricName, dates, currentDate, countryMetricData, countryFeatureData]);
+  }, [
+    selectedMetricName,
+    dates,
+    currentDate,
+    countryMetricData,
+    countryFeatureData,
+  ]);
 
   useEffect(() => {
     // update selected metric when current metric name is updated
-    let metricObj = METRICS.find(m => m.name === selectedMetricName);
+    let metricObj = METRICS.find((m) => m.name === selectedMetricName);
     setSelectedMetric(metricObj);
   }, [selectedMetricName]);
 
@@ -218,10 +242,10 @@ const WorldDashboard = () => {
   // and play each date like a frame
   function play(event) {
     const playButton = event.target;
-    if (playButton.innerText === 'Play') {
-      setPlayBtnTxt('Pause');
+    if (playButton.innerText === "Play") {
+      setPlayBtnTxt("Pause");
     } else {
-      setPlayBtnTxt('Play');
+      setPlayBtnTxt("Play");
       clearInterval(intervalId);
       return;
     }
@@ -235,7 +259,7 @@ const WorldDashboard = () => {
       sv++;
       setSliderVal(sv);
       if (+sv === dates.length - 1) {
-        setPlayBtnTxt('Play');
+        setPlayBtnTxt("Play");
         clearInterval(intervalId);
       }
     }, 200);
@@ -245,21 +269,26 @@ const WorldDashboard = () => {
 
   return (
     <>
-      <div className='top-info-container'>
-        <div className='title'>Country Metrics</div>
-        <div className='title-desc'>
-          {dataLoading ? 'Loading country metric data...' : 'Hover on a country or territory to see risk metrics'}
+      <div className="top-info-container">
+        <div className="title">Country Metrics</div>
+        <div className="title-desc">
+          {dataLoading
+            ? "Loading country metric data..."
+            : "Hover on a country or territory to see risk metrics"}
         </div>
       </div>
-      <div className='metrics'>
-        <span className='metrics-title'><p>Selected Metric</p></span>
+      <div className="metrics">
+        <span className="metrics-title">
+          <p>Selected Metric</p>
+        </span>
         <select
-          name='name'
-          className='metric-select'
+          name="name"
+          className="metric-select"
           value={selectedMetricName}
           onChange={(event) => {
             setSelectedMetricName(event.target.value);
-          }}>
+          }}
+        >
           {getMetricItems()}
         </select>
       </div>
@@ -268,56 +297,56 @@ const WorldDashboard = () => {
         height={size.height}
         globalImageUrl={GLOBAL_IMAGE_URL}
         getColorScale={getColorScale}
-        backgroundColor={'#fff'}
+        backgroundColor={"#fff"}
         countryFeatureData={countryFeatureData}
         startingPointOfView={STARTING_POV_USA}
         selectedMetric={selectedMetric}
         polygonLabel={polygonLabel}
       />
-      <div className='bottom-info-container'>
-        <div style={{ display: 'flex', justifyContent: 'center' }} >
-          <div className='timeline-container'>
-            <button className='play-button' onClick={play}>{playBtnText}</button>
+      <div className="bottom-info-container">
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <div className="timeline-container">
+            <button className="play-button" onClick={play}>
+              {playBtnText}
+            </button>
             <input
-              className='slider'
+              className="slider"
               disabled={sliderDisabled}
-              type='range'
-              min='0'
+              type="range"
+              min="0"
               value={sliderVal}
               max={sliderMax}
-              step='1'
+              step="1"
               onChange={(event) => {
                 setSliderVal(event.target.value);
               }}
             />
-            <span className='slider-date'>
-              <p
-              >
-                {dates[sliderVal]}
-              </p>
+            <span className="slider-date">
+              <p>{dates[sliderVal]}</p>
             </span>
           </div>
         </div>
-        <div className='metric-totals'>
-          Total Metrics <span className='updated'>as of {formatDate(dates[sliderVal])}</span>
+        <div className="metric-totals">
+          Total Metrics{" "}
+          <span className="updated">as of {formatDate(dates[sliderVal])}</span>
         </div>
-        <table className='metric-total-table'>
+        <table className="metric-total-table">
           <thead>
             <tr>
-              <th className='table-header' >
-                Utilized
-              </th>
+              <th className="table-header">Utilized</th>
             </tr>
           </thead>
           <tbody>
-              <tr>
-              <td><span className='table-cell'>{totalUtilized}</span></td>
+            <tr>
+              <td>
+                <span className="table-cell">{totalUtilized}</span>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </>
   );
-}
+};
 
 export default WorldDashboard;
