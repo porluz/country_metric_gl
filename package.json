@@ -6,17 +6,17 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",
-    "d3": "^6.2.0",
+    "d3": "^7.8.2",
     "dayjs": "^1.9.1",
     "lodash.clonedeep": "^4.5.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-globe.gl": "^2.12.5",
-    "react-scripts": "3.4.3"
+    "react-scripts": "^5.0.1"
   },
   "scripts": {
-    "start": "react-scripts start --no-cache",
-    "build": "react-scripts build --no-cache",
+    "start": "react-scripts start --openssl-legacy-provider --no-cache",
+    "build": "react-scripts build --openssl-legacy-provider --no-cache",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
