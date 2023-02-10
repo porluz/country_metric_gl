@@ -1,4 +1,8 @@
-# React 3D World Visualization Demo of Country Specific Risk Metrics
+# React 3D World Visualization Demo of Country Specific Metrics
+Inspired by https://www.covidvisualizer.com/
+
+## Demo
+https://incandescent-cajeta-a76d90.netlify.app/
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
