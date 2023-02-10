@@ -6,9 +6,8 @@ import World from "../world/world";
 
 import useWindowSize from "../useWindowSize";
 
-const COUNTRY_FEATURE_DATA =
-  "http://localhost:3000/datasets/ne_110m_admin_0_countries.geojson";
-const COUNTRY_METRIC_DATA = "http://localhost:3000/datasets/metricData.json";
+const COUNTRY_FEATURE_DATA = "./datasets/ne_110m_admin_0_countries.geojson";
+const COUNTRY_METRIC_DATA = "./datasets/metricData.json";
 const GLOBAL_IMAGE_URL =
   "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-day.jpg";
 const FLAG_ENDPOINT = "https://flagcdn.com/120x90";
